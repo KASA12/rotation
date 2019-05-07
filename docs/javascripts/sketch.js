@@ -1,6 +1,7 @@
 const chars = [];
 let font = null;
 const str = "ROTATION";
+let x_interval, y_interval;
 
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
@@ -8,20 +9,31 @@ function setup() {
   smooth();
   frameRate(60);
 
-  for (let i = 0; i < str.length; i++) {
-    chars.push(
-      new Char(
-        100 + (width - 100) / str.length * i,
-        height / 2,
-        i,
-        str.charAt(i),//String.fromCharCode(Math.trunc(random(65, 91))),
-        i, //num
-        color(240, 5, 100) //color
-      )
-    );
-  }
+  x_interval = (width - 100) / str.length;
+  y_interval = height / 8;
 
-  camera(0, 0, (height / 2.0) / tan(PI * 30.0 / 180.0), 0, 0, 0, 0, 1, 0);
+  for (let i = -3; i < str.length + 5; i++) {
+    for (let j = -3; j < 15; j++) {
+      let c;
+      if (0 <= i && i < str.length && j === 3) {
+        c = color(240, 10, 100);
+      } else {
+        c = color(240, 10, 70);
+      }
+      chars.push(
+        new Char(
+          100 + x_interval * i, //x
+          50 + y_interval * j, //y
+          i, //z 
+          str.charAt(Math.abs(i) % str.length),//str //String.fromCharCode(Math.trunc(random(65, 91))),
+          i, //x_num
+          j, //y_num
+          c //color
+        )
+      );
+    }
+  }
+  camera(0, 0, (height / 1.5) / tan(PI * 30.0 / 180.0), 0, 0, 0, 0, 1, 0);
 }
 
 function draw() {
@@ -29,27 +41,28 @@ function draw() {
   push();
   translate(-width / 2, -height / 2, 0);
 
-  chars.sort((a, b) => {
-    if (a.depth() > b.depth()) return 1;
-    else if (a.depth() < b.depth()) return -1;
-    else return 0;
-  })
-
-  for (let i = 0; i < chars.length; i++) {
-    chars[i].update();
-  }
+  chars.forEach(c => {
+    c.update();
+  });
 
   pop();
 
+  camera(
+    easing(0, -300, 0, 130, "inout"),
+    easing(0, -150, 0, 130, "inout"),
+    (height / 1.5) / tan(PI * 30.0 / 180.0) - easing(0, 300, 0, 130, "inout"),
+    0, 0, 0, 0, 1, 0);
 
   orbitControl();
 }
 
 class Char {
-  constructor(x, y, z, str, num, color = color(255), pg_size = 150) {
+  constructor(x, y, z, str, x_num, y_num, color = color(255), pg_size = 60) {
     this.v = createVector(x, y, z);
+    this.v_origin = createVector(x, y, z);
     this.str = str;
-    this.num = num;
+    this.x_num = x_num;
+    this.y_num = y_num;
     this.color = color;
     this.pg_size = pg_size;
 
@@ -62,11 +75,60 @@ class Char {
   }
 
   update() {
+    const frame_interval = 20;
+    let state = Math.trunc(frameCount / frame_interval);
+
+    switch (state) {
+      case 0: // ↓
+        if (this.x_num % 2 === 0) {
+          this.v.y = easing(this.v_origin.y, this.v_origin.y + y_interval, frame_interval * state, 15, "inout");
+        }
+        break;
+      case 1:　// ↓
+        if (Math.abs(this.x_num) % 2 === 1) {
+          this.v.y = easing(this.v_origin.y, this.v_origin.y + y_interval, frame_interval * state, 15, "inout");
+        }
+        break;
+      case 2: // →
+        if (this.y_num % 2 === 0) {
+          this.v.x = easing(this.v_origin.x, this.v_origin.x + x_interval, frame_interval * state, 15, "inout");
+        }
+        break;
+      case 3: // →
+        if (Math.abs(this.y_num) % 2 === 1) {
+          this.v.x = easing(this.v_origin.x, this.v_origin.x + x_interval, frame_interval * state, 15, "inout");
+        }
+        break;
+      case 4: // ↑
+        if (this.x_num % 2 === 0) {
+          this.v.y = easing(this.v_origin.y + y_interval, this.v_origin.y, frame_interval * state, 15, "inout");
+        }
+        break;
+      case 5: // ↑
+        if (Math.abs(this.x_num) % 2 === 1) {
+          this.v.y = easing(this.v_origin.y + y_interval, this.v_origin.y, frame_interval * state, 15, "inout");
+        }
+        break;
+      case 6: // ←
+        if (this.y_num % 2 === 0) {
+          this.v.x = easing(this.v_origin.x + x_interval, this.v_origin.x, frame_interval * state, 15, "inout");
+        }
+        break;
+      case 7: // ←
+        if (Math.abs(this.y_num) % 2 === 1) {
+          this.v.x = easing(this.v_origin.x + x_interval, this.v_origin.x, frame_interval * state, 15, "inout");
+        }
+        break;
+      default:
+        frameCount = 0;
+        break;
+    }
+
     this.pg.clear();
     this.pg.noStroke();
-    this.pg.textSize(120);
+    this.pg.textSize(64);
     this.pg.textAlign(CENTER, CENTER);
-    this.pg.textFont("Sawarabi Mincho");
+    this.pg.textFont("serif");
     this.pg.fill(0);
     this.pg.text(this.str, this.pg_size / 2 - 5, this.pg_size / 2 + 5);
     this.pg.fill(this.color);
