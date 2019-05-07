@@ -1,24 +1,29 @@
 const chars = [];
 let font = null;
+
 const str = "ROTATION";
+
 let x_interval, y_interval;
+
+const frame_interval = 20;
+let state;
 
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
   colorMode(HSB, 360, 100, 100, 100);
   smooth();
-  frameRate(60);
+  frameRate(30);
 
   x_interval = (width - 100) / str.length;
   y_interval = height / 8;
 
   for (let i = -3; i < str.length + 5; i++) {
-    for (let j = -3; j < 15; j++) {
+    for (let j = -3; j < 12; j++) {
       let c;
       if (0 <= i && i < str.length && j === 3) {
         c = color(240, 10, 100);
       } else {
-        c = color(240, 10, 70);
+        c = color(240, 10, 50);
       }
       chars.push(
         new Char(
@@ -38,20 +43,29 @@ function setup() {
 
 function draw() {
   background(240, 78, 24);
+  state = Math.trunc(frameCount / frame_interval);
+
   push();
   translate(-width / 2, -height / 2, 0);
-
   chars.forEach(c => {
     c.update();
   });
-
   pop();
 
-  camera(
-    easing(0, -300, 0, 130, "inout"),
-    easing(0, -150, 0, 130, "inout"),
-    (height / 1.5) / tan(PI * 30.0 / 180.0) - easing(0, 300, 0, 130, "inout"),
-    0, 0, 0, 0, 1, 0);
+  if (frameCount < 10 * frame_interval) {
+    camera(
+      easing(0, -300, 0, 130, "inout"),
+      easing(0, -150, 0, 130, "inout"),
+      (height / 1.5) / tan(PI * 30.0 / 180.0) - easing(0, 300, 0, 150, "inout"),
+      0, 0, 0, 0, 1, 0);
+  } else {
+    console.log("hoge");
+    camera(
+      easing(-300, 0, 10 * frame_interval, 20, "inout"),
+      easing(-150, 0, 10 * frame_interval, 20, "inout"),
+      (height / 1.5) / tan(PI * 30.0 / 180.0) - easing(300, 0, 10 * frame_interval, 20, "inout"),
+      0, 0, 0, 0, 1, 0);
+  }
 
   orbitControl();
 }
@@ -75,9 +89,6 @@ class Char {
   }
 
   update() {
-    const frame_interval = 20;
-    let state = Math.trunc(frameCount / frame_interval);
-
     switch (state) {
       case 0: // ↓
         if (this.x_num % 2 === 0) {
@@ -119,7 +130,26 @@ class Char {
           this.v.x = easing(this.v_origin.x + x_interval, this.v_origin.x, frame_interval * state, 15, "inout");
         }
         break;
+      case 8:
+        if (0 <= this.x_num && this.x_num < str.length && this.y_num === 3) {
+          this.v.z = easing(this.v_origin.z, +150, frame_interval * state, 15, "inout");
+        } else {
+          this.v.z = easing(this.v_origin.z, -100, frame_interval * state, 15, "inout");
+          this.v.y = easing(this.v_origin.y, -1 * y_interval, frame_interval * state, 15, "inout");
+        }
+        break;
+      case 9:
+        break;
+      case 10:
+        if (0 <= this.x_num && this.x_num < str.length && this.y_num === 3) {
+          this.v.z = easing(this.v_origin.z + 150, this.v_origin.z, frame_interval * state, 15, "inout");
+        } else {
+          this.v.z = easing(-100, this.v_origin.z, frame_interval * state, 15, "inout");
+          this.v.y = easing(-1 * y_interval, this.v_origin.y, frame_interval * state, 15, "inout");
+        }
+        break;
       default:
+        this.v = this.v_origin.copy();
         frameCount = 0;
         break;
     }
